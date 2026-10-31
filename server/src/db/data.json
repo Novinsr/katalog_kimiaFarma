@@ -1,0 +1,134 @@
+{
+    "settings": {
+        "storeName": "Kimia Farma",
+        "tagline": "Toko Obat Terpercaya",
+        "phone": "6281234567890",
+        "address": "Jl. Melati No. 12, Jakarta",
+        "currency": "Rp",
+        "activeWhatsApp": true
+    },
+    "admin": {
+        "id": "admin-1",
+        "name": "Owner Kimia Farma",
+        "email": "admin @katalogwa.com",
+        "'password": "-"
+    },
+    "categories": [
+        {
+            "id": "cat-1",
+            "name": "Obat",
+            "slug": "obat"
+        },
+        {
+            "id": "cat-2",
+            "name": "Vitamin",
+            "slug": "vitamin"
+        },
+        {
+            "id": "cat-3",
+            "name": "Alat Kesehatan",
+            "slug": "alat kesehatan"
+        }
+    ],
+    "products": [
+        {
+            "id": "prod-1",
+            "name": "Obat Paracetamol",
+            "categoryId": "cat-1",
+            "categoryName": "Obat",
+            "price": 10000,
+            "stockStatus": "Tersedia",
+            "description": "Obat Paracetamol",
+            "image": "-",
+            "createdAt": "2026-10=19T15:57:55.6657"
+        },
+        {
+            "id": "prod-2",
+            "name": "Obat Aspirin",
+            "categoryId": "cat-1",
+            "categoryName": "Obat",
+            "price": 15000,
+            "stockStatus": "Tersedia",
+            "description": "Obat Aspirin",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"
+        },
+        {
+        "id": "prod-3",
+            "name": "Obat Antihistamin",
+            "categoryId": "cat-1",
+            "categoryName": "Obat",
+            "price": 15000,
+            "stockStatus": "Tersedia",
+            "description": "Obat Antihistamin",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"
+        },
+        {
+         "id": "prod-4",
+            "name": "Vitamin C",
+            "categoryId": "cat-2",
+            "categoryName": "Vitamin",
+            "price": 20000,
+            "stockStatus": "Tersedia",
+            "description": "Vitamin C",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"    
+        },
+        {
+             "id": "prod-5",
+            "name": "Vitamin D",
+            "categoryId": "cat-2",
+            "categoryName": "Vitamin",
+            "price": 20000,
+            "stockStatus": "Tersedia",
+            "description": "Vitamin D",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"
+        },
+        {
+         "id": "prod-6",
+            "name": "Vitamin Kalsium",
+            "categoryId": "cat-2",
+            "categoryName": "Vitamin",
+            "price": 30000,
+            "stockStatus": "Tersedia",
+            "description": "Obat Vitamin Kalsium",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"
+        },
+        {
+        "id": "prod-7",
+            "name": "Termometer",
+            "categoryId": "cat-3",
+            "categoryName": "Alat Kesehatan",
+            "price": 150000,
+            "stockStatus": "Tersedia",
+            "description": "Termometer",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"
+        },
+        {
+        "id": "prod-8",
+            "name": "Perban",
+            "categoryId": "cat-3",
+            "categoryName": "Alat Kesehatan",
+            "price": 20000,
+            "stockStatus": "Tersedia",
+            "description": "Perban",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"
+        },
+        {
+        "id": "prod-9",
+            "name": "Tabung Oksigen",
+            "categoryId": "cat-3",
+            "categoryName": "Alat Kesehatan",
+            "price": 150000,
+            "stockStatus": "Tersedia",
+            "description": "Tabung Oksigen",
+            "image": "-",
+            "createdAt": "2026-10-19T15:57.55.666Z"
+        }
+    ]
+}

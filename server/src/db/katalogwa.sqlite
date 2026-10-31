@@ -1,0 +1,2 @@
+INSERT INTO product (id, name, category_id, price, stock_status, description, image, created_at, updated_at)
+VALUES('prod-99','Obat Paracetamol', 'CAT-1', 10000, 'Tersedia',",") ('prod-2','Obat Aspirin', 'CAT-2', 15000, 'Tersedia',",")
