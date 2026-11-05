@@ -1,0 +1,110 @@
+[
+  {
+    "id": "1793605466072",
+    "timestamp": 1793605466072,
+    "method": "POST",
+    "url": "http://localhost:5000/api/products",
+    "statusCode": 400,
+    "statusText": "Bad Request",
+    "timeMs": 242,
+    "sizeBytes": 1128,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793605392060",
+    "timestamp": 1793605392060,
+    "method": "POST",
+    "url": "http://localhost:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: connect ECONNREFUSED 127.0.0.1:5000; connect ECONNREFUSED ::1:5000",
+    "timeMs": 67,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793605150652",
+    "timestamp": 1793605150652,
+    "method": "POST",
+    "url": "http://localhost:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: connect ECONNREFUSED 127.0.0.1:5000; connect ECONNREFUSED ::1:5000",
+    "timeMs": 29,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793605006938",
+    "timestamp": 1793605006938,
+    "method": "POST",
+    "url": "http://localhost:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: connect ECONNREFUSED 127.0.0.1:5000; connect ECONNREFUSED ::1:5000",
+    "timeMs": 78,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793604856926",
+    "timestamp": 1793604856926,
+    "method": "POST",
+    "url": "http://localhost:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: connect ECONNREFUSED 127.0.0.1:5000; connect ECONNREFUSED ::1:5000",
+    "timeMs": 32,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793604845631",
+    "timestamp": 1793604845631,
+    "method": "POST",
+    "url": "http://localhost:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: connect ECONNREFUSED 127.0.0.1:5000; connect ECONNREFUSED ::1:5000",
+    "timeMs": 86,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793604299972",
+    "timestamp": 1793604299972,
+    "method": "GET",
+    "url": "http://locqlhost:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: getaddrinfo ENOTFOUND locqlhost",
+    "timeMs": 2794,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793604272771",
+    "timestamp": 1793604272771,
+    "method": "GET",
+    "url": "http://127.0.0.1:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: connect ECONNREFUSED 127.0.0.1:5000",
+    "timeMs": 28,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  },
+  {
+    "id": "1793604229530",
+    "timestamp": 1793604229530,
+    "method": "GET",
+    "url": "http://localhost:5000/api/products",
+    "statusCode": 0,
+    "statusText": "Error: connect ECONNREFUSED 127.0.0.1:5000; connect ECONNREFUSED ::1:5000",
+    "timeMs": 39,
+    "sizeBytes": 0,
+    "collectionName": "",
+    "requestName": "Untitled Request"
+  }
+]

@@ -4,7 +4,7 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-//GET store setting (public)
+// GET store settings (public)
 router.get('/', (req, res) => {
     const settings = db.getSettings();
     res.json({
@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
     });
 });
 
-//PUT update store settings (admin protected)
+// PUT update store settings (admin protected)
 router.put('/', authenticateToken, (req, res) => {
     const { storeName, tagline, phone, address } = req.body;
 
@@ -21,7 +21,7 @@ router.put('/', authenticateToken, (req, res) => {
     const updated = db.updateSettings({
         storeName: storeName || current.storeName,
         tagline: tagline || current.tagline,
-        phhone: phone ? phone.replace(/[^0-9]/g,'') : current.phone,
+        phone: phone ? phone.replace(/[^0-9]/g, '') : current.phone,
         address: address !== undefined ? address : current.address
     });
 
