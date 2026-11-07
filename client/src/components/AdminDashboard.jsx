@@ -814,10 +814,10 @@ export const AdminDashboard = ({
                                                                 >
                                                                     <span
                                                                         className={`stock-status-pill ${(prod.stock !== undefined ? prod.stock : 0) > 5
-                                                                                ? 'available'
-                                                                                : (prod.stock !== undefined ? prod.stock : 0) > 0
-                                                                                    ? 'limited'
-                                                                                    : 'unavailable'
+                                                                            ? 'available'
+                                                                            : (prod.stock !== undefined ? prod.stock : 0) > 0
+                                                                                ? 'limited'
+                                                                                : 'unavailable'
                                                                             }`}
                                                                     >
                                                                         {(prod.stock !== undefined ? prod.stock : 0) > 5
@@ -1179,7 +1179,6 @@ export const AdminDashboard = ({
                                                     <>
                                                         <div className="cat-name-info">
                                                             <strong>{cat.name}</strong>
-                                                            <span className="cat-badge-id">ID: {cat.id}</span>
                                                         </div>
                                                         <div className="cat-actions-group">
                                                             <button

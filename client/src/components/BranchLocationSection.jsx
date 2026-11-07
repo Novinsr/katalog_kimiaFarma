@@ -271,11 +271,10 @@ export const BranchLocationSection = ({ storeSettings, selectedProcessingBranch,
                                             >
                                                 <div className="branch-item-header">
                                                     <div className="branch-title-group">
-                                                        <div className="branch-tags-wrap">
-                                                            <span className="branch-code-badge">{branch.code}</span>
-                                                            <span className="branch-prototype-tag">Data Prototype</span>
+                                                        <div className="branch-title-group">
+                                                            <h4 className="branch-item-name">{branch.name}</h4>
                                                         </div>
-                                                        <h4 className="branch-item-name">{branch.name}</h4>
+
                                                     </div>
 
                                                     {isChosenProcessor && (
