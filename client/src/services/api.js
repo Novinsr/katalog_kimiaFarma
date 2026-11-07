@@ -106,6 +106,15 @@ export const updateProduct = async (id, formData) => {
     return handleResponse(res);
 };
 
+export const updateProductStock = async (id, stock) => {
+    const res = await fetch(`${API_BASE}/products/${id}/stock-amount`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ stock: Number(stock) })
+    });
+    return handleResponse(res);
+};
+
 export const toggleProductStock = async (id) => {
     const res = await fetch(`${API_BASE}/products/${id}/stock`, {
         method: 'PATCH',
@@ -118,6 +127,32 @@ export const deleteProduct = async (id) => {
     const res = await fetch(`${API_BASE}/products/${id}`, {
         method: 'DELETE',
         headers: getHeaders()
+    });
+    return handleResponse(res);
+};
+
+// Orders
+export const fetchOrders = async () => {
+    const res = await fetch(`${API_BASE}/orders`, {
+        headers: getHeaders()
+    });
+    return handleResponse(res);
+};
+
+export const createOrder = async (orderData) => {
+    const res = await fetch(`${API_BASE}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+    });
+    return handleResponse(res);
+};
+
+export const updateOrderStatus = async (id, status) => {
+    const res = await fetch(`${API_BASE}/orders/${id}/status`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ status })
     });
     return handleResponse(res);
 };
@@ -141,4 +176,17 @@ export const fetchAdminProfile = async () => {
         headers: getHeaders()
     });
     return handleResponse(res);
+};
+
+export const updateAdminProfile = async (profileData) => {
+    const res = await fetch(`${API_BASE}/auth/profile`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(profileData)
+    });
+    const data = await handleResponse(res);
+    if (data && data.token) {
+        setAuthToken(data.token);
+    }
+    return data;
 };

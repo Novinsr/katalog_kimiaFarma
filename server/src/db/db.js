@@ -36,9 +36,44 @@ class SqliteDatabase {
         name TEXT NOT NULL,
         category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
         price INTEGER NOT NULL,
+        stock INTEGER NOT NULL DEFAULT 10,
         stock_status TEXT NOT NULL DEFAULT 'Tersedia',
         description TEXT,
         image TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Schema migration check: ensure 'stock' column exists
+    try {
+      const productCols = this.db.prepare('PRAGMA table_info(products)').all();
+      const hasStock = productCols.some((col) => col.name === 'stock');
+      if (!hasStock) {
+        this.db.exec('ALTER TABLE products ADD COLUMN stock INTEGER NOT NULL DEFAULT 10');
+      }
+    } catch {
+      // Ignore if already added
+    }
+
+    // 2b. Orders Table (Relational with customer, delivery, and processing branch)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id TEXT PRIMARY KEY,
+        order_number TEXT NOT NULL UNIQUE,
+        customer_name TEXT NOT NULL,
+        customer_phone TEXT NOT NULL,
+        address TEXT NOT NULL,
+        kelurahan TEXT,
+        kecamatan TEXT,
+        city TEXT DEFAULT 'Kota Sukabumi',
+        notes TEXT,
+        branch_id TEXT NOT NULL,
+        branch_name TEXT NOT NULL,
+        delivery_method TEXT NOT NULL DEFAULT 'Diantar ke Alamat',
+        status TEXT NOT NULL DEFAULT 'Menunggu Verifikasi',
+        total_price INTEGER NOT NULL,
+        items_json TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
@@ -262,6 +297,31 @@ class SqliteDatabase {
     return this.db.prepare('SELECT id, name, email, password FROM admins WHERE LOWER(email) = LOWER(?)').get(email);
   }
 
+  getAdminById(id) {
+    return this.db.prepare('SELECT id, name, email, password FROM admins WHERE id = ?').get(id);
+  }
+
+  updateAdmin(id, updateData) {
+    const current = this.getAdminById(id) || this.getAdmin();
+    if (!current) return null;
+
+    const name = updateData.name !== undefined ? updateData.name.trim() : current.name;
+    const email = updateData.email !== undefined ? updateData.email.trim().toLowerCase() : current.email;
+    const password = updateData.password !== undefined ? updateData.password : current.password;
+
+    this.db.prepare(`
+      UPDATE admins
+      SET name = ?, email = ?, password = ?
+      WHERE id = ?
+    `).run(name, email, password, current.id);
+
+    return {
+      id: current.id,
+      name,
+      email
+    };
+  }
+
   // --- Category SQL Operations ---
   getCategories() {
     return this.db.prepare(`
@@ -317,6 +377,7 @@ class SqliteDatabase {
         p.category_id AS categoryId, 
         c.name AS categoryName, 
         p.price, 
+        p.stock,
         p.stock_status AS stockStatus, 
         p.description, 
         p.image, 
@@ -336,8 +397,14 @@ class SqliteDatabase {
     }
 
     if (filters.stockStatus && filters.stockStatus !== 'all' && filters.stockStatus !== 'Semua') {
-      sql += ' AND p.stock_status = ?';
-      params.push(filters.stockStatus);
+      if (filters.stockStatus === 'available') {
+        sql += ' AND p.stock > 0';
+      } else if (filters.stockStatus === 'out') {
+        sql += ' AND p.stock <= 0';
+      } else {
+        sql += ' AND p.stock_status = ?';
+        params.push(filters.stockStatus);
+      }
     }
 
     if (filters.search && filters.search.trim()) {
@@ -348,17 +415,37 @@ class SqliteDatabase {
 
     sql += ' ORDER BY p.created_at DESC';
 
-    return this.db.prepare(sql).all(...params);
+    const products = this.db.prepare(sql).all(...params);
+    return products.map(p => this.computeProductStatus(p));
+  }
+
+  computeProductStatus(product) {
+    if (!product) return null;
+    const stock = Number(product.stock !== undefined ? product.stock : 0);
+    let stockStatus = 'Tersedia';
+    if (stock <= 0) {
+      stockStatus = 'Habis';
+    } else if (stock <= 5) {
+      stockStatus = 'Stok Terbatas';
+    } else {
+      stockStatus = 'Tersedia';
+    }
+    return {
+      ...product,
+      stock,
+      stockStatus
+    };
   }
 
   getProductById(id) {
-    return this.db.prepare(`
+    const raw = this.db.prepare(`
       SELECT 
         p.id, 
         p.name, 
         p.category_id AS categoryId, 
         c.name AS categoryName, 
         p.price, 
+        p.stock,
         p.stock_status AS stockStatus, 
         p.description, 
         p.image, 
@@ -368,6 +455,8 @@ class SqliteDatabase {
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.id = ?
     `).get(id);
+
+    return this.computeProductStatus(raw);
   }
 
   // Alias to ensure compatibility if invoked as getProductsById
@@ -380,14 +469,19 @@ class SqliteDatabase {
     const name = productData.name ? productData.name.trim() : '';
     const categoryId = productData.categoryId || productData.category_id;
     const price = Number(productData.price) || 0;
-    const stockStatus = productData.stockStatus || productData.stock_status || 'Tersedia';
+    const stock = productData.stock !== undefined ? Math.max(0, Number(productData.stock)) : 10;
+    
+    let stockStatus = 'Tersedia';
+    if (stock <= 0) stockStatus = 'Habis';
+    else if (stock <= 5) stockStatus = 'Stok Terbatas';
+
     const description = productData.description ? productData.description.trim() : '';
     const image = productData.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80';
 
     this.db.prepare(`
-      INSERT INTO products (id, name, category_id, price, stock_status, description, image)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, categoryId, price, stockStatus, description, image);
+      INSERT INTO products (id, name, category_id, price, stock, stock_status, description, image)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name, categoryId, price, stock, stockStatus, description, image);
 
     return this.getProductById(id);
   }
@@ -401,9 +495,16 @@ class SqliteDatabase {
       ? productData.categoryId
       : (productData.category_id !== undefined ? productData.category_id : current.categoryId);
     const price = productData.price !== undefined ? Number(productData.price) : current.price;
-    const stockStatus = productData.stockStatus !== undefined
-      ? productData.stockStatus
-      : (productData.stock_status !== undefined ? productData.stock_status : current.stockStatus);
+    
+    let stock = current.stock;
+    if (productData.stock !== undefined && !isNaN(productData.stock)) {
+      stock = Math.max(0, Number(productData.stock));
+    }
+
+    let stockStatus = 'Tersedia';
+    if (stock <= 0) stockStatus = 'Habis';
+    else if (stock <= 5) stockStatus = 'Stok Terbatas';
+
     const description = productData.description !== undefined
       ? (productData.description ? productData.description.trim() : '')
       : current.description;
@@ -411,9 +512,27 @@ class SqliteDatabase {
 
     this.db.prepare(`
       UPDATE products 
-      SET name = ?, category_id = ?, price = ?, stock_status = ?, description = ?, image = ?, updated_at = CURRENT_TIMESTAMP
+      SET name = ?, category_id = ?, price = ?, stock = ?, stock_status = ?, description = ?, image = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(name, categoryId, price, stockStatus, description, image, id);
+    `).run(name, categoryId, price, stock, stockStatus, description, image, id);
+
+    return this.getProductById(id);
+  }
+
+  updateProductStock(id, newStock) {
+    const current = this.getProductById(id);
+    if (!current) return null;
+
+    const stock = Math.max(0, Number(newStock));
+    let stockStatus = 'Tersedia';
+    if (stock <= 0) stockStatus = 'Habis';
+    else if (stock <= 5) stockStatus = 'Stok Terbatas';
+
+    this.db.prepare(`
+      UPDATE products 
+      SET stock = ?, stock_status = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `).run(stock, stockStatus, id);
 
     return this.getProductById(id);
   }
@@ -422,19 +541,101 @@ class SqliteDatabase {
     const product = this.getProductById(id);
     if (!product) return null;
 
-    const newStock = product.stockStatus === 'Tersedia' ? 'Habis' : 'Tersedia';
-    this.db.prepare(`
-      UPDATE products 
-      SET stock_status = ?, updated_at = CURRENT_TIMESTAMP 
-      WHERE id = ?
-    `).run(newStock, id);
-
-    return this.getProductById(id);
+    const newStock = product.stock > 0 ? 0 : 10;
+    return this.updateProductStock(id, newStock);
   }
 
   deleteProduct(id) {
     const res = this.db.prepare('DELETE FROM products WHERE id = ?').run(id);
     return res.changes > 0;
+  }
+
+  // --- Orders SQL Operations ---
+  getOrders() {
+    return this.db.prepare(`
+      SELECT 
+        id,
+        order_number AS orderNumber,
+        customer_name AS customerName,
+        customer_phone AS customerPhone,
+        address,
+        kelurahan,
+        kecamatan,
+        city,
+        notes,
+        branch_id AS branchId,
+        branch_name AS branchName,
+        delivery_method AS deliveryMethod,
+        status,
+        total_price AS totalPrice,
+        items_json AS itemsJson,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM orders
+      ORDER BY created_at DESC
+    `).all();
+  }
+
+  createOrder(orderData) {
+    const id = `ord-${Date.now()}`;
+    const orderNumber = `KF-ORD-${Date.now().toString().slice(-6)}`;
+    const customerName = (orderData.customerName || '').trim();
+    const customerPhone = (orderData.customerPhone || '').trim();
+    const address = (orderData.address || '').trim();
+    const kelurahan = (orderData.kelurahan || '').trim();
+    const kecamatan = (orderData.kecamatan || '').trim();
+    const city = (orderData.city || 'Kota Sukabumi').trim();
+    const notes = (orderData.notes || '').trim();
+    const branchId = orderData.branchId || 'KF 0221';
+    const branchName = orderData.branchName || 'KF 0221';
+    const deliveryMethod = 'Diantar ke Alamat';
+    const status = orderData.status || 'Menunggu Verifikasi';
+    const totalPrice = Number(orderData.totalPrice) || 0;
+    const items = orderData.items || [];
+    const itemsJson = typeof orderData.itemsJson === 'string' ? orderData.itemsJson : JSON.stringify(items);
+
+    // Reduce stock only upon confirmed order creation
+    const updateProductStmt = this.db.prepare(`
+      UPDATE products
+      SET stock = MAX(0, stock - ?),
+          stock_status = CASE 
+            WHEN MAX(0, stock - ?) <= 0 THEN 'Habis'
+            WHEN MAX(0, stock - ?) <= 5 THEN 'Stok Terbatas'
+            ELSE 'Tersedia'
+          END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+
+    for (const item of items) {
+      if (item && item.productId && item.quantity > 0) {
+        updateProductStmt.run(item.quantity, item.quantity, item.quantity, item.productId);
+      }
+    }
+
+    this.db.prepare(`
+      INSERT INTO orders (
+        id, order_number, customer_name, customer_phone, address, 
+        kelurahan, kecamatan, city, notes, branch_id, branch_name, 
+        delivery_method, status, total_price, items_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id, orderNumber, customerName, customerPhone, address,
+      kelurahan, kecamatan, city, notes, branchId, branchName,
+      deliveryMethod, status, totalPrice, itemsJson
+    );
+
+    return this.db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+  }
+
+  updateOrderStatus(id, newStatus) {
+    this.db.prepare(`
+      UPDATE orders 
+      SET status = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `).run(newStatus, id);
+
+    return this.db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
   }
 
   close() {

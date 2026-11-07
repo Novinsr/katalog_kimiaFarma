@@ -88,8 +88,10 @@ router.post('/login', (req, res) => {
 });
 
 // Verify token & get current profile
-router.get('/me', authenticateToken, (req, res) => {
-    const admin = (req.user && db.getAdminByEmail && db.getAdminByEmail(req.user.email)) || db.getAdmin();
+const handleGetProfile = (req, res) => {
+    const admin = (req.user?.id && db.getAdminById && db.getAdminById(req.user.id)) ||
+        (req.user?.email && db.getAdminByEmail && db.getAdminByEmail(req.user.email)) ||
+        db.getAdmin();
     if (!admin) {
         return res.status(404).json({ success: false, message: 'Admin tidak ditemukan' });
     }
@@ -101,6 +103,94 @@ router.get('/me', authenticateToken, (req, res) => {
             email: admin.email
         }
     });
-});
+};
+
+router.get('/me', authenticateToken, handleGetProfile);
+router.get('/profile', authenticateToken, handleGetProfile);
+
+// Update admin profile (name, email, password)
+const handleProfileUpdate = (req, res) => {
+    const { name, email, currentPassword, newPassword } = req.body;
+
+    const currentAdmin = (req.user?.id && db.getAdminById && db.getAdminById(req.user.id)) ||
+        (req.user?.email && db.getAdminByEmail && db.getAdminByEmail(req.user.email)) ||
+        db.getAdmin();
+    if (!currentAdmin) {
+        return res.status(404).json({ success: false, message: 'Admin tidak ditemukan' });
+    }
+
+    if (name !== undefined && !name.trim()) {
+        return res.status(400).json({ success: false, message: 'Nama admin tidak boleh kosong' });
+    }
+
+    if (email !== undefined && !email.trim()) {
+        return res.status(400).json({ success: false, message: 'Email admin tidak boleh kosong' });
+    }
+
+    const updatePayload = {};
+    if (name) updatePayload.name = name.trim();
+    if (email) updatePayload.email = email.trim().toLowerCase();
+
+    // If changing password, require current password verification
+    if (newPassword && newPassword.trim()) {
+        if (!currentPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password saat ini wajib diisi untuk mengubah password'
+            });
+        }
+
+        let isMatch = false;
+        try {
+            if (currentAdmin.password && (currentAdmin.password.startsWith('$2a$') || currentAdmin.password.startsWith('$2b$') || currentAdmin.password.startsWith('$2y$'))) {
+                isMatch = bcrypt.compareSync(currentPassword.trim(), currentAdmin.password);
+            } else {
+                isMatch = (currentPassword.trim() === currentAdmin.password);
+            }
+        } catch {
+            isMatch = false;
+        }
+
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password saat ini tidak cocok'
+            });
+        }
+
+        if (newPassword.trim().length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password baru minimal 6 karakter'
+            });
+        }
+
+        updatePayload.password = bcrypt.hashSync(newPassword.trim(), 10);
+    }
+
+    const updated = db.updateAdmin(currentAdmin.id, updatePayload);
+
+    // Issue refreshed token with updated info
+    const token = jwt.sign(
+        { id: updated.id, email: updated.email, name: updated.name },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
+    return res.json({
+        success: true,
+        message: 'Profil admin berhasil diperbarui',
+        token,
+        user: {
+            id: updated.id,
+            name: updated.name,
+            email: updated.email
+        }
+    });
+};
+
+router.put('/profile', authenticateToken, handleProfileUpdate);
+router.post('/profile', authenticateToken, handleProfileUpdate);
+router.patch('/profile', authenticateToken, handleProfileUpdate);
 
 export default router;

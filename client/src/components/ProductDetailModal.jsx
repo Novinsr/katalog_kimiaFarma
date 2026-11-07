@@ -1,10 +1,26 @@
 import React from 'react';
-import { X, MessageCircle, ShieldCheck, CheckCircle2, XCircle, AlertCircle, Pill } from 'lucide-react';
+import { X, MessageCircle, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, AlertCircle, Pill, Package, Truck } from 'lucide-react';
 
 export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder }) => {
     if (!product) return null;
 
-    const isAvailable = product.stockStatus === 'Tersedia';
+    const stock = Number(product.stock !== undefined ? product.stock : (product.stockStatus === 'Habis' ? 0 : 10));
+
+    // Status otomatis:
+    // stock > 5 → "Tersedia"
+    // stock 1 - 5 → "Stok Terbatas"
+    // stock === 0 → "Habis"
+    let statusText = 'Tersedia';
+    let statusClass = 'available';
+    if (stock === 0) {
+        statusText = 'Habis';
+        statusClass = 'unavailable';
+    } else if (stock <= 5) {
+        statusText = 'Stok Terbatas';
+        statusClass = 'limited';
+    }
+
+    const isAvailable = stock > 0;
 
     const formatRupiah = (number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -67,11 +83,29 @@ export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder })
                                 </div>
                             </div>
 
+                            {/* Badge Status & Jumlah Stok */}
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                                <span className={`product-stock-tag ${isAvailable ? 'available' : 'unavailable'}`} style={{ position: 'static' }}>
-                                    {isAvailable ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-                                    <span>{isAvailable ? 'Stok Tersedia' : 'Stok Habis'}</span>
+                                <span className={`product-stock-tag ${statusClass}`} style={{ position: 'static' }}>
+                                    {stock > 5 ? <CheckCircle2 size={13} /> : stock > 0 ? <AlertTriangle size={13} /> : <XCircle size={13} />}
+                                    <span>Status: {statusText}</span>
                                 </span>
+
+                                <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 800,
+                                    background: 'var(--slate-100)',
+                                    color: 'var(--slate-800)',
+                                    border: '1px solid var(--slate-300)',
+                                    padding: '0.2rem 0.65rem',
+                                    borderRadius: '9999px'
+                                }}>
+                                    <Package size={13} color="var(--blue-600)" />
+                                    <span>Stok: <strong>{stock} pcs</strong></span>
+                                </span>
+
                                 <span style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
@@ -87,6 +121,23 @@ export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder })
                                     <ShieldCheck size={13} />
                                     <span>BPOM & Asli</span>
                                 </span>
+                            </div>
+
+                            {/* Info Pengantaran */}
+                            <div style={{
+                                marginTop: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                fontSize: '0.76rem',
+                                color: 'var(--blue-800)',
+                                background: 'var(--blue-50)',
+                                padding: '0.3rem 0.6rem',
+                                borderRadius: '6px',
+                                border: '1px solid var(--blue-100)'
+                            }}>
+                                <Truck size={14} color="var(--blue-600)" />
+                                <span>Metode: <strong>Diantar ke Alamat Pelanggan</strong></span>
                             </div>
                         </div>
                     </div>
@@ -104,7 +155,7 @@ export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder })
                             <span>Indikasi & Deskripsi Produk:</span>
                         </h4>
                         <p style={{ fontSize: '0.88rem', color: 'var(--slate-700)', lineHeight: 1.6 }}>
-                            {product.description || 'Tidak ada deskripsi tambahan. Silakan hubungi apoteker kami melalui WhatsApp untuk informasi dosis, efek samping, dan aturan minum lengkap.'}
+                            {product.description || 'Sediaan farmasi resmi berstandar apotek. Konsultasikan penggunaan dengan apoteker kami melalui WhatsApp untuk informasi dosis, efek samping, dan aturan minum lengkap.'}
                         </p>
                     </div>
 
@@ -121,7 +172,7 @@ export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder })
                         color: '#92400e'
                     }}>
                         <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-                        <span>Pastikan membaca petunjuk penggunaan atau resep dokter sebelum mengonsumsi obat. Apoteker kami siap membantu via WhatsApp.</span>
+                        <span>Pastikan membaca petunjuk penggunaan atau resep dokter sebelum mengonsumsi obat. Pesanan akan diproses oleh cabang apotek dan diantar langsung ke rumah Anda.</span>
                     </div>
                 </div>
 
@@ -139,11 +190,10 @@ export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder })
                         }}
                     >
                         <MessageCircle size={17} />
-                        <span>{isAvailable ? 'Pesan Sekarang via WA' : 'Stok Sedang Habis'}</span>
+                        <span>{isAvailable ? 'Pesan Sekarang (Diantar)' : 'Stok Sedang Habis'}</span>
                     </button>
                 </div>
             </div>
         </div>
     );
 };
-

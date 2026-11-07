@@ -15,6 +15,7 @@ import { OrderModal } from './components/OrderModal';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { BranchLocationSection, SUKABUMI_BRANCHES } from './components/BranchLocationSection';
 import {
   MessageCircle,
   MapPin,
@@ -29,7 +30,9 @@ import {
   Filter,
   CheckCircle2,
   PhoneCall,
-  Search
+  Search,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 export function App() {
@@ -40,10 +43,13 @@ export function App() {
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState('all'); // 'all' | 'available' | 'out'
   const [sortBy, setSortBy] = useState('default'); // 'default' | 'price-asc' | 'price-desc' | 'name-asc'
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Modals
   const [selectedProductForOrder, setSelectedProductForOrder] = useState(null);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState(null);
+  const [selectedProcessingBranch, setSelectedProcessingBranch] = useState(SUKABUMI_BRANCHES[0]);
 
   // Admin authentication & views
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
@@ -145,6 +151,20 @@ export function App() {
     return result;
   }, [products, activeCategoryId, search, stockFilter, sortBy]);
 
+  // Reset page to 1 when filters or sorting change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeCategoryId, stockFilter, sortBy]);
+
+  // Pagination calculation (10 data per halaman)
+  const totalPages = Math.ceil(processedProducts.length / ITEMS_PER_PAGE) || 1;
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+    return processedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [processedProducts, safeCurrentPage]);
+
   // Clean phone number for WhatsApp links
   const rawPhone = storeSettings?.phone || '6281234567890';
   const cleanPhone = rawPhone.replace(/\D/g, '');
@@ -163,6 +183,7 @@ export function App() {
           storeSettings={storeSettings}
           adminUser={adminUser}
           onRefreshData={loadData}
+          onUpdateAdminUser={(user) => setAdminUser(user)}
           onBackToCatalog={() => setIsAdminView(false)}
           onLogout={handleLogout}
         />
@@ -290,7 +311,7 @@ export function App() {
             </section>
 
             {/* CATALOG SECTION */}
-            <section className="catalog-section">
+            <section className="catalog-section" id="katalog">
               <div className="container">
                 {/* Section Header */}
                 <div className="catalog-header-wrap">
@@ -312,7 +333,22 @@ export function App() {
                 {/* Sorting and Filter Toolbar */}
                 <div className="catalog-toolbar">
                   <div className="catalog-count-badge">
-                    <span>Menampilkan <strong>{processedProducts.length}</strong> produk</span>
+                    <span>
+                      Menampilkan{' '}
+                      {processedProducts.length > 0 ? (
+                        <>
+                          <strong>{(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(safeCurrentPage * ITEMS_PER_PAGE, processedProducts.length)}</strong> dari <strong>{processedProducts.length}</strong>
+                        </>
+                      ) : (
+                        <strong>0</strong>
+                      )}{' '}
+                      produk
+                      {totalPages > 1 && (
+                        <span className="catalog-page-indicator">
+                          (Hal. {safeCurrentPage}/{totalPages})
+                        </span>
+                      )}
+                    </span>
                     {(search || activeCategoryId || stockFilter !== 'all') && (
                       <button
                         className="btn-link-reset"
@@ -395,17 +431,69 @@ export function App() {
                     <p>Memuat katalog produk farmasi...</p>
                   </div>
                 ) : processedProducts.length > 0 ? (
-                  /* Product Grid */
-                  <div className="catalog-grid animate-fade-in">
-                    {processedProducts.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        onSelectProduct={setSelectedProductForOrder}
-                        onViewDetail={setSelectedProductForDetail}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    {/* Product Grid */}
+                    <div className="catalog-grid animate-fade-in">
+                      {paginatedProducts.map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onSelectProduct={setSelectedProductForOrder}
+                          onViewDetail={setSelectedProductForDetail}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Catalog Pagination Controls (10 Produk Per Halaman) */}
+                    {totalPages > 1 && (
+                      <nav className="catalog-pagination-wrap animate-fade-in" aria-label="Navigasi Halaman Katalog">
+                        <button
+                          type="button"
+                          className="pagination-btn pagination-nav-btn"
+                          disabled={safeCurrentPage === 1}
+                          onClick={() => {
+                            setCurrentPage((prev) => Math.max(prev - 1, 1));
+                            document.getElementById('katalog')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          aria-label="Halaman Sebelumnya"
+                        >
+                          <ChevronLeft size={16} />
+                          <span>Sebelumnya</span>
+                        </button>
+
+                        <div className="pagination-numbers">
+                          {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              className={`pagination-btn pagination-num-btn ${safeCurrentPage === pageNum ? 'active' : ''}`}
+                              onClick={() => {
+                                setCurrentPage(pageNum);
+                                document.getElementById('katalog')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              aria-current={safeCurrentPage === pageNum ? 'page' : undefined}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="pagination-btn pagination-nav-btn"
+                          disabled={safeCurrentPage === totalPages}
+                          onClick={() => {
+                            setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+                            document.getElementById('katalog')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          aria-label="Halaman Berikutnya"
+                        >
+                          <span>Berikutnya</span>
+                          <ChevronRight size={16} />
+                        </button>
+                      </nav>
+                    )}
+                  </>
                 ) : (
                   /* Empty Search / Filter State */
                   <div className="catalog-empty-state animate-fade-in">
@@ -457,27 +545,39 @@ export function App() {
                       Punya Resep Dokter yang Ingin Ditebus?
                     </h3>
                     <p className="prescription-desc">
-                      Foto lembar resep dokter Anda dan kirimkan via WhatsApp. Apoteker Kimia Farma akan memeriksa ketersediaan sediaan, menghitung dosis dan harga, serta mengantarkannya dengan aman.
+                      Foto lembar resep dokter Anda dan kirimkan via WhatsApp. Apoteker Kimia Farma akan memeriksa ketersediaan sediaan, menghitung dosis dan harga, serta mengantarkannya langsung ke alamat Anda setelah verifikasi selesai.
                     </p>
                     <div className="prescription-steps-row">
                       <div className="p-step">
                         <span className="p-step-num">1</span>
-                        <span>Foto Resep</span>
+                        <div className="p-step-text-wrap">
+                          <strong className="p-step-main">Foto Resep</strong>
+                          <span className="p-step-sub">Kamera HP jelas</span>
+                        </div>
                       </div>
                       <div className="p-step-arrow">→</div>
                       <div className="p-step">
                         <span className="p-step-num">2</span>
-                        <span>Kirim via WA</span>
+                        <div className="p-step-text-wrap">
+                          <strong className="p-step-main">Kirim via WA</strong>
+                          <span className="p-step-sub">Chat langsung apotek</span>
+                        </div>
                       </div>
                       <div className="p-step-arrow">→</div>
                       <div className="p-step">
                         <span className="p-step-num">3</span>
-                        <span>Apoteker Verifikasi</span>
+                        <div className="p-step-text-wrap">
+                          <strong className="p-step-main">Apoteker Verifikasi</strong>
+                          <span className="p-step-sub">Cek dosis & ketersediaan</span>
+                        </div>
                       </div>
                       <div className="p-step-arrow">→</div>
-                      <div className="p-step">
+                      <div className="p-step p-step-highlight">
                         <span className="p-step-num">4</span>
-                        <span>Obat Diantar / Diambil</span>
+                        <div className="p-step-text-wrap">
+                          <strong className="p-step-main">Obat Diantar ke Rumah</strong>
+                          <span className="p-step-sub">Pengiriman aman langsung ke alamat</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -500,12 +600,24 @@ export function App() {
               </div>
             </section>
 
+            {/* SECTION: LOKASI & CABANG KIMIA FARMA (Sebelum Footer) */}
+            <BranchLocationSection
+              storeSettings={storeSettings}
+              selectedProcessingBranch={selectedProcessingBranch}
+              onSelectProcessingBranch={setSelectedProcessingBranch}
+            />
+
             {/* Customer Order Details Form Modal */}
             {selectedProductForOrder && (
               <OrderModal
                 product={selectedProductForOrder}
                 storeSettings={storeSettings}
+                selectedProcessingBranch={selectedProcessingBranch}
                 onClose={() => setSelectedProductForOrder(null)}
+                onOrderSuccess={() => {
+                  loadData();
+                  setSelectedProductForOrder(null);
+                }}
               />
             )}
 

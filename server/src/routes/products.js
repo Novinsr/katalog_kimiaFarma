@@ -65,7 +65,7 @@ router.get('/:id', (req, res) => {
 
 // POST create product (admin protected)
 router.post('/', authenticateToken, upload.single('photo'), (req, res) => {
-    const { name, categoryId, price, stockStatus, description, imageURL } = req.body;
+    const { name, categoryId, price, stock, stockStatus, description, imageURL, imageUrl } = req.body;
 
     if (!name || !name.trim()) {
         return res.status(400).json({ success: false, message: 'Nama produk wajib diisi' });
@@ -77,7 +77,7 @@ router.post('/', authenticateToken, upload.single('photo'), (req, res) => {
         return res.status(400).json({ success: false, message: 'Harga produk harus angka positif' });
     }
 
-    let finalImage = imageURL;
+    let finalImage = imageURL || imageUrl;
     if (req.file) {
         finalImage = `/uploads/${req.file.filename}`;
     }
@@ -86,6 +86,7 @@ router.post('/', authenticateToken, upload.single('photo'), (req, res) => {
         name: name.trim(),
         categoryId,
         price: Number(price),
+        stock: stock !== undefined ? Math.max(0, Number(stock)) : 10,
         stockStatus: stockStatus || 'Tersedia',
         description: description ? description.trim() : '',
         image: finalImage || ''
@@ -101,7 +102,7 @@ router.post('/', authenticateToken, upload.single('photo'), (req, res) => {
 // PUT update product (admin protected)
 router.put('/:id', authenticateToken, upload.single('photo'), (req, res) => {
     const { id } = req.params;
-    const { name, categoryId, price, stockStatus, description, imageURL } = req.body;
+    const { name, categoryId, price, stock, stockStatus, description, imageURL, imageUrl, image } = req.body;
 
     const existing = db.getProductsById(id);
     if (!existing) {
@@ -112,13 +113,15 @@ router.put('/:id', authenticateToken, upload.single('photo'), (req, res) => {
     if (name !== undefined) updatePayLoad.name = name.trim();
     if (categoryId !== undefined) updatePayLoad.categoryId = categoryId;
     if (price !== undefined) updatePayLoad.price = Number(price);
+    if (stock !== undefined && !isNaN(stock)) updatePayLoad.stock = Math.max(0, Number(stock));
     if (stockStatus !== undefined) updatePayLoad.stockStatus = stockStatus;
     if (description !== undefined) updatePayLoad.description = description.trim();
 
+    const targetUrl = imageURL || imageUrl || image;
     if (req.file) {
         updatePayLoad.image = `/uploads/${req.file.filename}`;
-    } else if (imageURL !== undefined && imageURL.trim()) {
-        updatePayLoad.image = imageURL.trim();
+    } else if (targetUrl !== undefined && targetUrl.trim()) {
+        updatePayLoad.image = targetUrl.trim();
     }
 
     const updated = db.updateProduct(id, updatePayLoad);
@@ -126,6 +129,27 @@ router.put('/:id', authenticateToken, upload.single('photo'), (req, res) => {
     res.json({
         success: true,
         message: 'Produk berhasil diperbarui',
+        data: updated
+    });
+});
+
+// PATCH update stock amount directly
+router.patch('/:id/stock-amount', authenticateToken, (req, res) => {
+    const { id } = req.params;
+    const { stock } = req.body;
+
+    if (stock === undefined || isNaN(stock)) {
+        return res.status(400).json({ success: false, message: 'Jumlah stok harus berupa angka' });
+    }
+
+    const updated = db.updateProductStock(id, Number(stock));
+    if (!updated) {
+        return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
+    }
+
+    res.json({
+        success: true,
+        message: `Stok berhasil diubah menjadi ${updated.stock} pcs (${updated.stockStatus})`,
         data: updated
     });
 });

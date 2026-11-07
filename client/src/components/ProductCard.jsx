@@ -1,8 +1,24 @@
 import React from 'react';
-import { MessageCircle, CheckCircle2, XCircle, Eye, ShieldCheck } from 'lucide-react';
+import { MessageCircle, CheckCircle2, AlertTriangle, XCircle, Eye, ShieldCheck, Package } from 'lucide-react';
 
 export const ProductCard = ({ product, onSelectProduct, onViewDetail }) => {
-    const isAvailable = product.stockStatus === 'Tersedia';
+    const stock = Number(product.stock !== undefined ? product.stock : (product.stockStatus === 'Habis' ? 0 : 10));
+    
+    // Status otomatis:
+    // stock > 5 → "Tersedia"
+    // stock 1 - 5 → "Stok Terbatas"
+    // stock === 0 → "Habis"
+    let statusText = 'Tersedia';
+    let statusClass = 'available';
+    if (stock === 0) {
+        statusText = 'Habis';
+        statusClass = 'unavailable';
+    } else if (stock <= 5) {
+        statusText = 'Stok Terbatas';
+        statusClass = 'limited';
+    }
+
+    const isAvailable = stock > 0;
 
     // Format Indonesian Rupiah
     const formatRupiah = (number) => {
@@ -43,11 +59,16 @@ export const ProductCard = ({ product, onSelectProduct, onViewDetail }) => {
                 </span>
 
                 {/* Stock Status Badge */}
-                <span className={`product-stock-tag ${isAvailable ? 'available' : 'unavailable'}`}>
-                    {isAvailable ? (
+                <span className={`product-stock-tag ${statusClass}`}>
+                    {stock > 5 ? (
                         <>
                             <CheckCircle2 size={12} />
                             <span>Tersedia</span>
+                        </>
+                    ) : stock > 0 ? (
+                        <>
+                            <AlertTriangle size={12} />
+                            <span>Stok Terbatas</span>
                         </>
                     ) : (
                         <>
@@ -69,6 +90,15 @@ export const ProductCard = ({ product, onSelectProduct, onViewDetail }) => {
                     >
                         {product.name}
                     </h3>
+
+                    {/* Badge / Label Jumlah Stok Pcs */}
+                    <div className="product-stock-count-indicator">
+                        <span className={`stock-dot stock-dot-${statusClass}`}></span>
+                        <span className="stock-count-text">
+                            <strong>Stok:</strong> {stock} pcs {stock === 0 && <span className="stock-zero-tag">(Habis)</span>}
+                        </span>
+                    </div>
+
                     <p className="product-desc">
                         {product.description || 'Sediaan farmasi resmi berstandar apotek. Konsultasikan penggunaan dengan apoteker kami.'}
                     </p>
@@ -100,10 +130,10 @@ export const ProductCard = ({ product, onSelectProduct, onViewDetail }) => {
                             disabled={!isAvailable}
                             onClick={() => onSelectProduct(product)}
                             id={`btn-order-${product.id}`}
-                            title={isAvailable ? 'Pesan produk ini via WhatsApp' : 'Produk saat ini sedang habis'}
+                            title={isAvailable ? 'Pesan produk ini (Diantar ke Alamat)' : 'Stok habis - pemesanan dinonaktifkan'}
                         >
                             <MessageCircle size={16} />
-                            <span>{isAvailable ? 'Pesan WA' : 'Habis'}</span>
+                            <span>{isAvailable ? 'Pesan' : 'Habis'}</span>
                         </button>
                     </div>
                 </div>

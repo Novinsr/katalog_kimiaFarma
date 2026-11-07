@@ -55,15 +55,10 @@ export const Header = ({
                     title="Kembali ke Beranda Katalog"
                 >
                     <div className="logo-brand">
-                        <img
-                            src={Logo}
-                            alt={storeSettings?.storeName || 'Kimia Farma'}
+                        <img src={Logo} width={48} height={48} alt={storeSettings?.storeName || 'Kimia Farma'}
                             style={{
-                                height: '46px',
-                                width: 'auto',
-                                maxHeight: '46px',
-                                objectFit: 'contain',
-                                borderRadius: '8px'
+
+
                             }}
                         />
                     </div>
