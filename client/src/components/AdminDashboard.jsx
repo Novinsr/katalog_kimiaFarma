@@ -52,7 +52,9 @@ import {
     updateStoreSettings,
     updateAdminProfile,
     fetchOrders,
-    updateOrderStatus
+    updateOrderStatus,
+    getImageUrl,
+    SERVER_URL
 } from '../services/api';
 
 export const AdminDashboard = ({
@@ -743,7 +745,7 @@ export const AdminDashboard = ({
                                             filteredProducts.map((prod) => {
                                                 const isAvailable = prod.stockStatus === 'Tersedia';
                                                 const fallbackImg = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80';
-                                                const displayImg = prod.image && prod.image !== '-' ? prod.image : fallbackImg;
+                                                const displayImg = getImageUrl(prod.image) || fallbackImg;
 
                                                 return (
                                                     <tr key={prod.id} className={!isAvailable ? 'row-out-of-stock' : ''}>
@@ -756,6 +758,19 @@ export const AdminDashboard = ({
                                                                     className="table-product-thumb"
                                                                     loading="lazy"
                                                                     onError={(e) => {
+                                                                        if (!e.target.dataset.triedRelative && prod.image && prod.image.includes('product-')) {
+                                                                            e.target.dataset.triedRelative = 'true';
+                                                                            const filename = prod.image.split('/').pop().trim();
+                                                                            e.target.src = `/uploads/${filename}`;
+                                                                            return;
+                                                                        }
+                                                                        if (!e.target.dataset.triedServer && prod.image && prod.image.includes('product-')) {
+                                                                            e.target.dataset.triedServer = 'true';
+                                                                            const filename = prod.image.split('/').pop().trim();
+                                                                            const base = SERVER_URL.replace(/\/+$/, '');
+                                                                            e.target.src = `${base}/uploads/${filename}`;
+                                                                            return;
+                                                                        }
                                                                         e.target.onerror = null;
                                                                         e.target.src = fallbackImg;
                                                                     }}

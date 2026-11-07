@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, MessageCircle, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, AlertCircle, Pill, Package, Truck } from 'lucide-react';
+import { getImageUrl, SERVER_URL } from '../services/api';
 
 export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder }) => {
     if (!product) return null;
@@ -31,7 +32,7 @@ export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder })
     };
 
     const fallbackImage = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80';
-    const displayImage = product.image && product.image !== '-' ? product.image : fallbackImage;
+    const displayImage = getImageUrl(product.image) || fallbackImage;
 
     return (
         <div className="modal-backdrop" onClick={onClose}>
@@ -69,6 +70,21 @@ export const ProductDetailModal = ({ product, storeSettings, onClose, onOrder })
                                 alt={product.name}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 onError={(e) => {
+                                    // Jika akses via SERVER_URL gagal, coba relative path /uploads/... (lewat Nginx proxy)
+                                    if (!e.target.dataset.triedRelative && product.image && product.image.includes('product-')) {
+                                        e.target.dataset.triedRelative = 'true';
+                                        const filename = product.image.split('/').pop().trim();
+                                        e.target.src = `/uploads/${filename}`;
+                                        return;
+                                    }
+                                    // Jika akses via relative gagal, coba SERVER_URL langsung
+                                    if (!e.target.dataset.triedServer && product.image && product.image.includes('product-')) {
+                                        e.target.dataset.triedServer = 'true';
+                                        const filename = product.image.split('/').pop().trim();
+                                        const base = SERVER_URL.replace(/\/+$/, '');
+                                        e.target.src = `${base}/uploads/${filename}`;
+                                        return;
+                                    }
                                     e.target.onerror = null;
                                     e.target.src = fallbackImage;
                                 }}

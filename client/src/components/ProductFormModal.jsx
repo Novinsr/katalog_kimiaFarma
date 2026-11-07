@@ -14,6 +14,7 @@ import {
     ChevronDown,
     Link as LinkIcon
 } from 'lucide-react';
+import { getImageUrl, SERVER_URL } from '../services/api';
 
 const PRESET_PHARMACY_IMAGES = [
     { label: 'Obat Tablet & Kapsul', url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80' },
@@ -195,10 +196,23 @@ export const ProductFormModal = ({ isOpen, onClose, onSave, editingProduct, cate
                                 <div className="pf-preview-box">
                                     {previewSrc ? (
                                         <img
-                                            src={previewSrc}
+                                            src={getImageUrl(previewSrc) || previewSrc}
                                             alt="Preview"
                                             className="pf-preview-img"
                                             onError={(e) => {
+                                                if (!e.target.dataset.triedRelative && previewSrc && previewSrc.includes('product-')) {
+                                                    e.target.dataset.triedRelative = 'true';
+                                                    const filename = previewSrc.split('/').pop().trim();
+                                                    e.target.src = `/uploads/${filename}`;
+                                                    return;
+                                                }
+                                                if (!e.target.dataset.triedServer && previewSrc && previewSrc.includes('product-')) {
+                                                    e.target.dataset.triedServer = 'true';
+                                                    const filename = previewSrc.split('/').pop().trim();
+                                                    const base = SERVER_URL.replace(/\/+$/, '');
+                                                    e.target.src = `${base}/uploads/${filename}`;
+                                                    return;
+                                                }
                                                 e.target.onerror = null;
                                                 e.target.src = PRESET_PHARMACY_IMAGES[0].url;
                                             }}

@@ -17,6 +17,7 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { SUKABUMI_BRANCHES } from './BranchLocationSection';
+import { getImageUrl, SERVER_URL } from '../services/api';
 
 export const OrderModal = ({
     product,
@@ -310,10 +311,23 @@ Mohon segera diverifikasi oleh apoteker dan diproses pengantarannya. Terima kasi
                             {/* Product Info Bar */}
                             <div className="order-product-summary">
                                 <img
-                                    src={product.image && product.image !== '-' ? product.image : 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80'}
+                                    src={getImageUrl(product.image) || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80'}
                                     alt={product.name}
                                     className="summary-img"
                                     onError={(e) => {
+                                        if (!e.target.dataset.triedRelative && product.image && product.image.includes('product-')) {
+                                            e.target.dataset.triedRelative = 'true';
+                                            const filename = product.image.split('/').pop().trim();
+                                            e.target.src = `/uploads/${filename}`;
+                                            return;
+                                        }
+                                        if (!e.target.dataset.triedServer && product.image && product.image.includes('product-')) {
+                                            e.target.dataset.triedServer = 'true';
+                                            const filename = product.image.split('/').pop().trim();
+                                            const base = SERVER_URL.replace(/\/+$/, '');
+                                            e.target.src = `${base}/uploads/${filename}`;
+                                            return;
+                                        }
                                         e.target.onerror = null;
                                         e.target.src = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80';
                                     }}
